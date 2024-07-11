@@ -2,21 +2,26 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {View, Text, StyleSheet, Alert} from 'react-native';
 import axios from 'axios';
 import Empty from '../components/Empty';
+import Loading from '../components/Loading';
+import {useFocusEffect} from '@react-navigation/native';
 
 const EmployeeDetails = ({route}) => {
   const {employeeId} = route?.params;
-  console.log('employeeId', employeeId);
 
   const [employee, setEmployee] = useState(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
-  useEffect(() => {
-    console.log('here');
-    if (employeeId) fetchEmployeeDetails();
-  }, [employeeId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchEmployeeDetails();
 
-  const fetchEmployeeDetails = useCallback(async () => {
-    console.log('inside');
+      return () => {
+        setEmployee(null);
+      };
+    }, []),
+  );
+
+  const fetchEmployeeDetails = async () => {
     setIsDetailsLoading(true);
     try {
       const response = await axios.get(
@@ -29,14 +34,13 @@ const EmployeeDetails = ({route}) => {
       setIsDetailsLoading(false);
 
       Alert.alert('Oops, some error occured. Please try again');
-      console.log('error', error.response?.data?.message);
     }
-  }, [employeeId]);
+  };
 
   return (
     <View style={styles.container}>
       {isDetailsLoading ? (
-        <Text>Loading...</Text>
+        <Loading />
       ) : employee?.id ? (
         <>
           <Text>Name: {employee.employee_name}</Text>

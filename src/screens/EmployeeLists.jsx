@@ -11,24 +11,29 @@ import {
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Empty from '../components/Empty';
+import Loading from '../components/Loading';
 
 const EmployeeList = ({navigation}) => {
   const [employees, setEmployees] = useState([]);
+  const [isListLoading, setIsListLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchEmployees();
   }, []);
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = async refresh => {
     console.log('fetch');
-    try {
-      const cachedEmployees = await AsyncStorage.getItem('employees');
-      if (cachedEmployees) {
-        console.log('cachedEmployees', cachedEmployees);
+    // saving the api data so to remove unnecessary api calls
+    const cachedEmployees = await AsyncStorage.getItem('employees');
+    if (!refresh && cachedEmployees) {
+      console.log('cachedEmployees', cachedEmployees);
 
-        setEmployees(JSON.parse(cachedEmployees));
-      } else {
+      setEmployees(JSON.parse(cachedEmployees));
+    } else {
+      try {
+        await AsyncStorage.removeItem('employees');
+        setIsListLoading(true);
         const response = await axios.get(
           'https://dummy.restapiexample.com/api/v1/employees',
         );
@@ -39,10 +44,11 @@ const EmployeeList = ({navigation}) => {
           'employees',
           JSON.stringify(response.data.data),
         );
+        setIsListLoading(false);
+      } catch (error) {
+        setIsListLoading(false);
+        Alert.alert('Oops, some error occured. Please try again');
       }
-    } catch (error) {
-      Alert.alert('Oops, some error occured. Please try again');
-      console.log('error', error.response?.data?.message);
     }
   };
 
@@ -52,33 +58,42 @@ const EmployeeList = ({navigation}) => {
     ),
   );
 
-  const renderItem = ({item}) => {
-    // console.log('item', item);
-    return (
-      <TouchableOpacity
-        style={styles.item}
-        onPress={() =>
-          navigation.navigate('EmployeeDetails', {employeeId: item.id})
-        }>
-        <Text>{item.employee_name}</Text>
-      </TouchableOpacity>
-    );
-  };
+  const renderItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.item}
+      onPress={() =>
+        navigation.navigate('EmployeeDetails', {employeeId: item.id})
+      }>
+      <Text>{item.employee_name}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search employees..."
-        value={search}
-        onChangeText={setSearch}
-      />
-      <FlatList
-        data={filteredEmployees}
-        keyExtractor={item => item.id.toString()}
-        renderItem={renderItem}
-        ListEmptyComponent={<Empty />}
-      />
+      <View style={styles.head}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search employees..."
+          value={search}
+          onChangeText={setSearch}
+        />
+        {/* refresh button to call api and fetch data if needed*/}
+        <TouchableOpacity
+          style={styles.refreshBtn}
+          onPress={() => fetchEmployees('refresh')}>
+          <Text style={styles.refreshTxt}>Refresh</Text>
+        </TouchableOpacity>
+      </View>
+      {isListLoading ? (
+        <Loading />
+      ) : (
+        <FlatList
+          data={filteredEmployees}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderItem}
+          ListEmptyComponent={<Empty />}
+        />
+      )}
     </View>
   );
 };
@@ -88,13 +103,28 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  head: {
+    flexDirection: 'row',
+    height: 40,
+    gap: 5,
+  },
+  refreshBtn: {
+    backgroundColor: 'darkgreen',
+    padding: 10,
+  },
+  refreshTxt: {
+    color: 'white',
+    fontWeight: '700',
+  },
   searchInput: {
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 16,
     paddingHorizontal: 8,
+    flex: 1,
   },
+
   item: {
     padding: 16,
     borderBottomWidth: 1,
