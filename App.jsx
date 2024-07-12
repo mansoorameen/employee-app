@@ -2,7 +2,7 @@ import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
-import EmployeeList from './src/screens/EmployeeLists';
+import EmployeeLists from './src/screens/EmployeeLists';
 import EmployeeDetails from './src/screens/EmployeeDetails';
 
 const Tab = createBottomTabNavigator();
@@ -11,7 +11,7 @@ const Stack = createStackNavigator();
 const BottomTabNavigation = () => {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="EmployeeList" component={EmployeeList} />
+      <Tab.Screen name="EmployeeList" component={EmployeeLists} />
       <Tab.Screen
         name="EmployeeDetails"
         component={EmployeeDetails}
