@@ -13,13 +13,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Empty from '../components/Empty';
 import Loading from '../components/Loading';
 
-const EmployeeList = ({navigation}) => {
+const EmployeeLists = ({route, navigation}) => {
+  const refresh = route?.params?.refresh;
   const [employees, setEmployees] = useState([]);
   const [isListLoading, setIsListLoading] = useState(false);
+  const [isCreateLoading, setIsCreateLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetchEmployees();
+    fetchEmployees(refresh);
   }, []);
 
   const fetchEmployees = async refresh => {
@@ -47,8 +49,32 @@ const EmployeeList = ({navigation}) => {
         setIsListLoading(false);
       } catch (error) {
         setIsListLoading(false);
-        Alert.alert('Oops, some error occured. Please try again');
+        Alert.alert(error.response.data.message);
       }
+    }
+  };
+
+  const createEmployee = async () => {
+    setIsCreateLoading(true);
+
+    const dummy = {
+      name: 'cena',
+      age: 20,
+      salary: 10000,
+    };
+    try {
+      const response = await axios.post(
+        `https://dummy.restapiexample.com/api/v1/create`,
+        dummy,
+      );
+      console.log('response', response);
+      // setEmployee(response.data.data);
+      setIsCreateLoading(false);
+      fetchEmployees('refresh');
+    } catch (error) {
+      setIsCreateLoading(false);
+
+      Alert.alert(error.response.data.message);
     }
   };
 
@@ -64,7 +90,7 @@ const EmployeeList = ({navigation}) => {
       onPress={() =>
         navigation.navigate('EmployeeDetails', {employeeId: item.id})
       }>
-      <Text>{item.employee_name}</Text>
+      <Text style={styles.txtColor}>{item.employee_name}</Text>
     </TouchableOpacity>
   );
 
@@ -87,12 +113,19 @@ const EmployeeList = ({navigation}) => {
       {isListLoading ? (
         <Loading />
       ) : (
-        <FlatList
-          data={filteredEmployees}
-          keyExtractor={item => item.id.toString()}
-          renderItem={renderItem}
-          ListEmptyComponent={<Empty />}
-        />
+        <>
+          <TouchableOpacity style={styles.createBtn} onPress={createEmployee}>
+            <Text style={styles.refreshTxt}>
+              {isCreateLoading ? 'Creating...' : 'Create New'}
+            </Text>
+          </TouchableOpacity>
+          <FlatList
+            data={filteredEmployees}
+            keyExtractor={item => item.id.toString()}
+            renderItem={renderItem}
+            ListEmptyComponent={<Empty />}
+          />
+        </>
       )}
     </View>
   );
@@ -107,14 +140,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 40,
     gap: 5,
+    marginBottom: 5,
   },
   refreshBtn: {
     backgroundColor: 'darkgreen',
     padding: 10,
   },
+  createBtn: {
+    backgroundColor: 'skyblue',
+    padding: 10,
+  },
   refreshTxt: {
     color: 'white',
     fontWeight: '700',
+    textAlign: 'center',
   },
   searchInput: {
     height: 40,
@@ -124,12 +163,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     flex: 1,
   },
-
   item: {
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
+  txtColor: {
+    color: 'black',
+  },
 });
 
-export default EmployeeList;
+export default EmployeeLists;
